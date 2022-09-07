@@ -1,0 +1,126 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": ""
+    },
+    "feapplicationGatewayName": {
+      "value": ""
+    },
+    "beapplicationGatewayName": {
+      "value": ""
+    },
+    "tier": {
+      "value": ""
+    },
+    "skuSize": {
+      "value": ""
+    },
+    "capacity": {
+      "value": 2
+    },
+    "subnetName": {
+      "value": ""
+    },
+    "zones": {
+      "value": []
+    },
+    "virtualNetworkName": {
+      "value": ""
+    },
+    "virtualNetworkPrefix": {
+      "value": []
+    },
+    "fegwpublicIpAddressName": {
+      "value": ""
+    },
+    "begwpublicIpAddressName": {
+      "value": ""
+    },
+    "sku": {
+      "value": ""
+    },
+    "allocationMethod": {
+      "value": ""
+    },
+    "publicIpZones": {
+      "value": []
+    },
+    "sample-web_data": {
+      "value": ""
+    },
+    "sample-web_password": {
+      "value": ""
+    },
+    "autoScaleMaxCapacity": {
+      "value": 2
+    },
+    "FE-WEB1-ASPName": {
+      "value": "1"
+    },
+    "FE-WEB1-ASPSkuName": {
+      "value": "F1",
+      "metadata": {
+        "description": "Describes plan's pricing tier and capacity. Check details at https://azure.microsoft.com/en-us/pricing/details/app-service/"
+      }
+    },
+    "bedatasrvAdminLogin": {
+      "value": "1"
+
+    },
+    "bedatasrvAdminLoginPassword": {
+      "value": ""
+    },
+    "bedatasrv2AdminLogin": {
+      "value": "1"
+
+    },
+    "bedatasrv2AdminLoginPassword": {
+      "value": ""
+    },
+    "bedatadb1Name": {
+      "value": "1"
+
+    },
+    "bedatadb1Collation": {
+      "value": "SQL_Latin1_General_CP1_CI_AS"
+    },
+    "bedatadb1Edition": {
+      "value": "Basic",
+
+    },
+    "bedatadb1RequestedServiceObjectiveName": {
+      "value": "Basic",
+      "metadata": {
+        "description": "Describes the performance level for Edition"
+      }
+    },
+    "bedatadb2Name": {
+      "value": "sampledb2"
+
+    },
+    "bedatadb2Collation": {
+      "value": "SQL_Latin1_General_CP1_CI_AS"
+    },
+    "bedatadb2Edition": {
+      "value": "Basic"
+
+    },
+    "bedatadb2RequestedServiceObjectiveName": {
+      "value": "Basic",
+
+      "metadata": {
+        "description": "Describes the performance level for Edition"
+      }
+    },
+    "bedatasrv1AdminLogin": {
+      "value": "admin123"
+
+    },
+    "bedatasrv1AdminLoginPassword": {
+      "value": ""
+    }
+  }
+}
+  

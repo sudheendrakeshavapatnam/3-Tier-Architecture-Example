@@ -1,0 +1,658 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "type": "string"
+    },
+    "feapplicationGatewayName": {
+      "type": "string"
+    },
+    "beapplicationGatewayName": {
+      "type": "string"
+    },
+    "tier": {
+      "type": "string"
+    },
+    "skuSize": {
+      "type": "string"
+    },
+    "capacity": {
+      "type": "int",
+      "defaultValue": 2
+    },
+    "subnetName": {
+      "type": "string"
+    },
+    "zones": {
+      "type": "array"
+    },
+    "bevirtualNetworkName": {
+      "type": "string"
+    },
+    "fevirtualNetworkName": {
+      "type": "string"
+    },
+    "virtualNetworkPrefix": {
+      "type": "array"
+    },
+    "fegwpublicIpAddressName": {
+      "type": "string"
+    },
+    "begwpublicIpAddressName": {
+      "type": "string"
+    },
+    "sku": {
+      "type": "string"
+    },
+    "allocationMethod": {
+      "type": "string"
+    },
+    "publicIpZones": {
+      "type": "array"
+    },
+    "sample-web_data": {
+      "type": "securestring"
+    },
+    "sample-web_password": {
+      "type": "securestring"
+    },
+    "autoScaleMaxCapacity": {
+      "type": "int"
+    },
+    "FE-WEB1-ASPName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "FE-WEB1-ASPSkuName": {
+      "type": "string",
+      "defaultValue": "F1",
+      "allowedValues": [
+        "F1",
+        "D1",
+        "B1",
+        "B2",
+        "B3",
+        "S1",
+        "S2",
+        "S3",
+        "P1",
+        "P2",
+        "P3",
+        "P4"
+      ],
+      "metadata": {
+        "description": "Describes plan's pricing tier and capacity. Check details at https://azure.microsoft.com/en-us/pricing/details/app-service/"
+      }
+    },
+    "bedatasrvAdminLogin": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bedatasrvAdminLoginPassword": {
+      "type": "securestring"
+    },
+    "bedatasrv2AdminLogin": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bedatasrv2AdminLoginPassword": {
+      "type": "securestring"
+    },
+    "bedatadb1Name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bedatadb1Collation": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "SQL_Latin1_General_CP1_CI_AS"
+    },
+    "bedatadb1Edition": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "allowedValues": [
+        "Basic",
+        "Standard",
+        "Premium"
+      ]
+    },
+    "bedatadb1RequestedServiceObjectiveName": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "allowedValues": [
+        "Basic",
+        "S0",
+        "S1",
+        "S2",
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "metadata": {
+        "description": "Describes the performance level for Edition"
+      }
+    },
+    "bedatadb2Name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bedatadb2Collation": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "SQL_Latin1_General_CP1_CI_AS"
+    },
+    "bedatadb2Edition": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "allowedValues": [
+        "Basic",
+        "Standard",
+        "Premium"
+      ]
+    },
+    "bedatadb2RequestedServiceObjectiveName": {
+      "type": "string",
+      "defaultValue": "Basic",
+      "allowedValues": [
+        "Basic",
+        "S0",
+        "S1",
+        "S2",
+        "P1",
+        "P2",
+        "P3"
+      ],
+      "metadata": {
+        "description": "Describes the performance level for Edition"
+      }
+    },
+    "bedatasrv1AdminLogin": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bedatasrv1AdminLoginPassword": {
+      "type": "securestring"
+    }
+  },
+  "variables": {
+    "vnetId": "[resourceId('Sample-Web-FE','Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]",
+    "fepublicIPRef": "[resourceId('Microsoft.Network/publicIPAddresses/', parameters('fegwpublicIpAddressName'))]",
+    "bepublicIPRef": "[resourceId('Microsoft.Network/publicIPAddresses/', parameters('begwpublicIpAddressName'))]",
+    "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
+    "applicationGatewayId": "[resourceId('Microsoft.Network/applicationGateways', parameters('feapplicationGatewayName'))]",
+    "FE-WEB1Name": "[concat('FE-WEB1', uniqueString(resourceGroup().id))]",
+    "FE-WEB2Name": "[concat('FE-WEB2', uniqueString(resourceGroup().id))]",
+    "bedatasrvName": "[concat('bedatasrv', uniqueString(resourceGroup().id))]",
+    "bedatasrv2Name": "[concat('bedatasrv2', uniqueString(resourceGroup().id))]",
+    "BE-VNETPrefix": "10.0.0.0/16",
+    "BE-VNETSubnet1Name": "Subnet-1",
+    "BE-VNETSubnet1Prefix": "10.0.0.0/24",
+    "BE-VNETSubnet2Name": "Subnet-2",
+    "BE-VNETSubnet2Prefix": "10.0.1.0/24",
+    "bedatasrv1Name": "[concat('bedatasrv1', uniqueString(resourceGroup().id))]"
+  },
+  "resources": [
+    {
+      "name": "[parameters('feapplicationGatewayName')]",
+      "type": "Microsoft.Network/applicationGateways",
+      "apiVersion": "2019-09-01",
+      "location": "[parameters('location')]",
+      "zones": "[parameters('zones')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('fevirtualNetworkName'))]",
+        "[concat('Microsoft.Network/publicIPAddresses/', parameters('fegwpublicIpAddressName'))]"
+      ],
+      "tags": {},
+      "properties": {
+        "sku": {
+          "name": "[parameters('skuSize')]",
+          "tier": "[parameters('tier')]"
+        },
+        "gatewayIPConfigurations": [
+          {
+            "name": "appGatewayIpConfig",
+            "properties": {
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "frontendIPConfigurations": [
+          {
+            "name": "appGwPublicFrontendIp",
+            "properties": {
+              "PublicIPAddress": {
+                "id": "[variables('fepublicIPRef')]"
+              }
+            }
+          }
+        ],
+        "frontendPorts": [
+          {
+            "name": "port_443",
+            "properties": {
+              "Port": 443
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "FE-WEB1",
+            "properties": {
+              "backendAddresses": []
+            }
+          },
+          {
+            "name": "FE-WEB2",
+            "properties": {
+              "backendAddresses": []
+            }
+          }
+        ],
+        "backendHttpSettingsCollection": [
+          {
+            "name": "FE-AG-HS",
+            "properties": {
+              "Port": 80,
+              "Protocol": "Http",
+              "cookieBasedAffinity": "Disabled",
+              "requestTimeout": 20
+            }
+          }
+        ],
+        "httpListeners": [
+          {
+            "name": "FE-AG-L1",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(variables('applicationGatewayId'), '/frontendIPConfigurations/appGwPublicFrontendIp')]"
+              },
+              "frontendPort": {
+                "id": "[concat(variables('applicationGatewayId'), '/frontendPorts/port_443')]"
+              },
+              "protocol": "Https",
+              "sslCertificate": {
+                "id": "[concat(variables('applicationGatewayId'), '/sslCertificates/sample-web')]"
+              }
+            }
+          }
+        ],
+        "requestRoutingRules": [
+          {
+            "Name": "FE-AG-R1",
+            "properties": {
+              "RuleType": "Basic",
+              "httpListener": {
+                "id": "[concat(variables('applicationGatewayId'), '/httpListeners/FE-AG-L1')]"
+              },
+              "priority": null,
+              "backendAddressPool": {
+                "id": "[concat(variables('applicationGatewayId'), '/backendAddressPools/FE-WEB1')]"
+              },
+              "backendHttpSettings": {
+                "id": "[concat(variables('applicationGatewayId'), '/backendHttpSettingsCollection/FE-AG-HS')]"
+              }
+            }
+          }
+        ],
+        "enableHttp2": false,
+        "sslCertificates": [
+          {
+            "name": "sample-web",
+            "properties": {
+              "data": "[parameters('sample-web_data')]",
+              "password": "[parameters('sample-web_password')]"
+            }
+          }
+        ],
+        "probes": [],
+        "autoscaleConfiguration": {
+          "minCapacity": "[parameters('capacity')]",
+          "maxCapacity": "[parameters('autoScaleMaxCapacity')]"
+        },
+        "webApplicationFirewallConfiguration": {
+          "enabled": true,
+          "firewallMode": "Detection",
+          "ruleSetType": "OWASP",
+          "ruleSetVersion": "3.0"
+        }
+      }
+    },
+    {
+      "apiVersion": "2019-09-01",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[parameters('fevirtualNetworkName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": "[parameters('virtualNetworkPrefix')]"
+        },
+        "subnets": [
+          {
+            "name": "default",
+            "properties": {
+              "addressPrefix": "172.17.0.0/24"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2020-08-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[parameters('fegwpublicIpAddressName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('sku')]"
+      },
+      "zones": "[parameters('publicIpZones')]",
+      "properties": {
+        "publicIPAllocationMethod": "[parameters('allocationMethod')]"
+      }
+    },
+    {
+      "name": "[parameters('FE-WEB1-ASPName')]",
+      "type": "Microsoft.Web/serverfarms",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-08-01",
+      "sku": {
+        "name": "[parameters('FE-WEB1-ASPSkuName')]"
+      },
+      "dependsOn": [],
+      "tags": {
+        "displayName": "FE-WEB1-ASP"
+      },
+      "properties": {
+        "name": "[parameters('FE-WEB1-ASPName')]",
+        "numberOfWorkers": 1
+      }
+    },
+    {
+      "name": "[variables('FE-WEB1Name')]",
+      "type": "Microsoft.Web/sites",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-08-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('FE-WEB1-ASPName'))]"
+      ],
+      "tags": {
+        "[concat('hidden-related:', resourceId('Microsoft.Web/serverfarms', parameters('FE-WEB1-ASPName')))]": "Resource",
+        "displayName": "FE-WEB1"
+      },
+      "properties": {
+        "name": "[variables('FE-WEB1Name')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('FE-WEB1-ASPName'))]"
+      }
+    },
+    {
+      "name": "[variables('FE-WEB2Name')]",
+      "type": "Microsoft.Web/sites",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-08-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('FE-WEB1-ASPName'))]"
+      ],
+      "tags": {
+        "[concat('hidden-related:', resourceId('Microsoft.Web/serverfarms', parameters('FE-WEB1-ASPName')))]": "Resource",
+        "displayName": "FE-WEB2"
+      },
+      "properties": {
+        "name": "[variables('FE-WEB2Name')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('FE-WEB1-ASPName'))]"
+      }
+    },
+    {
+      "name": "[variables('bedatasrvName')]",
+      "type": "Microsoft.Sql/servers",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2014-04-01-preview",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "bedatasrv"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('bedatasrvAdminLogin')]",
+        "administratorLoginPassword": "[parameters('bedatasrvAdminLoginPassword')]"
+      },
+      "resources": [
+        {
+          "name": "AllowAllWindowsAzureIps",
+          "type": "firewallrules",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers', variables('bedatasrvName'))]"
+          ],
+          "properties": {
+            "startIpAddress": "0.0.0.0",
+            "endIpAddress": "0.0.0.0"
+          }
+        },
+        {
+          "name": "[parameters('bedatadb1Name')]",
+          "type": "databases",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers', variables('bedatasrvName'))]"
+          ],
+          "tags": {
+            "displayName": "bedatadb1"
+          },
+          "properties": {
+            "collation": "[parameters('bedatadb1Collation')]",
+            "edition": "[parameters('bedatadb1Edition')]",
+            "maxSizeBytes": "1073741824",
+            "requestedServiceObjectiveName": "[parameters('bedatadb1RequestedServiceObjectiveName')]"
+          }
+        }
+      ]
+    },
+    {
+      "name": "[variables('bedatasrv2Name')]",
+      "type": "Microsoft.Sql/servers",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2014-04-01-preview",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "bedatasrv2"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('bedatasrv2AdminLogin')]",
+        "administratorLoginPassword": "[parameters('bedatasrv2AdminLoginPassword')]"
+      },
+      "resources": [
+        {
+          "name": "AllowAllWindowsAzureIps",
+          "type": "firewallrules",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers', variables('bedatasrv2Name'))]"
+          ],
+          "properties": {
+            "startIpAddress": "0.0.0.0",
+            "endIpAddress": "0.0.0.0"
+          }
+        },
+        {
+          "name": "[parameters('bedatadb2Name')]",
+          "type": "databases",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2014-04-01-preview",
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers', variables('bedatasrv2Name'))]"
+          ],
+          "tags": {
+            "displayName": "bedatadb2"
+          },
+          "properties": {
+            "collation": "[parameters('bedatadb2Collation')]",
+            "edition": "[parameters('bedatadb2Edition')]",
+            "maxSizeBytes": "1073741824",
+            "requestedServiceObjectiveName": "[parameters('bedatadb2RequestedServiceObjectiveName')]"
+          }
+        }
+      ]
+    },
+    {
+      "name": "[parameters('bevirtualNetworkName')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "[parameters('bevirtualNetworkName')]"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('BE-VNETPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('BE-VNETSubnet1Name')]",
+            "properties": {
+              "addressPrefix": "[variables('BE-VNETSubnet1Prefix')]"
+            }
+          },
+          {
+            "name": "[variables('BE-VNETSubnet2Name')]",
+            "properties": {
+              "addressPrefix": "[variables('BE-VNETSubnet2Prefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2020-08-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[parameters('begwpublicIpAddressName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "[parameters('sku')]"
+      },
+      "zones": "[parameters('publicIpZones')]",
+      "properties": {
+        "publicIPAllocationMethod": "[parameters('allocationMethod')]"
+      }
+    },
+    {
+      "name": "[parameters('beapplicationGatewayName')]",
+      "type": "Microsoft.Network/applicationGateways",
+      "apiVersion": "2019-09-01",
+      "location": "[parameters('location')]",
+      "zones": "[parameters('zones')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', parameters('begwpublicIpAddressName'))]"
+      ],
+      "tags": {},
+      "properties": {
+        "sku": {
+          "name": "[parameters('skuSize')]",
+          "tier": "[parameters('tier')]"
+        },
+        "gatewayIPConfigurations": [
+          {
+            "name": "appGatewayIpConfig",
+            "properties": {
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "frontendIPConfigurations": [
+          {
+            "name": "appGwPublicFrontendIp",
+            "properties": {
+              "PublicIPAddress": {
+                "id": "[variables('bepublicIPRef')]"
+              }
+            }
+          }
+        ],
+        "frontendPorts": [
+          {
+            "name": "port_80",
+            "properties": {
+              "Port": 80
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "BEDATAAGBE",
+            "properties": {
+              "backendAddresses": [
+                {
+                  "ipAddress": null,
+                  "fqdn": "bedatasrv2-server.database.windows.net"
+                },
+                {
+                  "ipAddress": null,
+                  "fqdn": "bedatasrv-server.database.windows.net"
+                }
+              ]
+            }
+          }
+        ],
+        "backendHttpSettingsCollection": [
+          {
+            "name": "BE-DATA-AG-HS1",
+            "properties": {
+              "Port": 80,
+              "Protocol": "Http",
+              "cookieBasedAffinity": "Disabled",
+              "requestTimeout": 20
+            }
+          }
+        ],
+        "httpListeners": [
+          {
+            "name": "BE-DATA-AG-L1",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[concat(variables('applicationGatewayId'), '/frontendIPConfigurations/appGwPublicFrontendIp')]"
+              },
+              "frontendPort": {
+                "id": "[concat(variables('applicationGatewayId'), '/frontendPorts/port_80')]"
+              },
+              "protocol": "Http",
+              "sslCertificate": null
+            }
+          }
+        ],
+        "requestRoutingRules": [
+          {
+            "Name": "BE-DATA-AG-R1",
+            "properties": {
+              "RuleType": "Basic",
+              "httpListener": {
+                "id": "[concat(variables('applicationGatewayId'), '/httpListeners/BE-DATA-AG-L1')]"
+              },
+              "priority": null,
+              "backendAddressPool": {
+                "id": "[concat(variables('applicationGatewayId'), '/backendAddressPools/BEDATAAGBE')]"
+              },
+              "backendHttpSettings": {
+                "id": "[concat(variables('applicationGatewayId'), '/backendHttpSettingsCollection/BE-DATA-AG-HS1')]"
+              }
+            }
+          }
+        ],
+        "enableHttp2": false,
+        "sslCertificates": [],
+        "probes": [],
+        "autoscaleConfiguration": {
+          "minCapacity": "[parameters('capacity')]",
+          "maxCapacity": "[parameters('autoScaleMaxCapacity')]"
+        }
+      }
+    }
+  ]
+}
